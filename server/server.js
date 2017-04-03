@@ -2,15 +2,15 @@ var express = require('express');
 var bodyParser = require('body-parser')
 var app = express();
 
-var nextCustomerId=1;
+var nextCustomerId = 1;
 class Customer {
-  constructor(name, city) {
-    if(name!="") {
-      this.id = nextCustomerId++;
-      this.name=name;
-      this.city=city;
+    constructor(name, city) {
+        if (name != "") {
+            this.id = nextCustomerId++;
+            this.name = name;
+            this.city = city;
+        }
     }
-  }
 }
 
 //This resource makes it possible to download and start the React client
@@ -19,7 +19,7 @@ app.use(express.static(__dirname + "/../client"));
 //Make app automatically parse json content
 app.use(bodyParser.json());
 
-var customers=[];
+var customers = [];
 customers.push(new Customer("Ola", "Trondheim"));
 customers.push(new Customer("Kari", "Oslo"));
 customers.push(new Customer("Per", "Tromsø"));
@@ -27,35 +27,76 @@ customers.push(new Customer("Per", "Tromsø"));
 
 //Get all customers
 app.get('/customers', (request, response) => {
-  //sending for instance: [{"id":1,"name":"Ola"}, {"id":2,"name":"Kari"}, {"id":3,"name":"Per"}]
-  var customer_id_and_names=[]
-  for(var c=0;c<customers.length;c++) {
-    customer_id_and_names.push({id: customers[c].id, name: customers[c].name});
-  }
-  response.send(customer_id_and_names);
+    //sending for instance: [{"id":1,"name":"Ola"}, {"id":2,"name":"Kari"}, {"id":3,"name":"Per"}]
+    var customer_id_and_names = []
+    for (var c = 0; c < customers.length; c++) {
+        customer_id_and_names.push({id: customers[c].id, name: customers[c].name});
+    }
+    response.send(customer_id_and_names);
 });
 
 //Get one customer given its id
 app.get('/customers/:id', (request, response) => {
-  for(var c=0;c<customers.length;c++) {
-    if(customers[c].id==request.params.id) {
-      response.send(customers[c]);
-      return;
+    for (var c = 0; c < customers.length; c++) {
+        if (customers[c].id == request.params.id) {
+            response.send(customers[c]);
+            return;
+        }
     }
-  }
-  //Respond with not found status code
-  response.sendStatus(404);
+    //Respond with not found status code
+    response.sendStatus(404);
 });
 
 //Add new customer if name and city contain data
 app.post('/customers', (request, response) => {
-  if(request.body.name && request.body.city) {
-    customers.push(new Customer(request.body.name, request.body.city));
-    response.send(customers[customers.length-1].id.toString());
-    return;
-  }
-  //Respond with bad request status code
-  response.sendStatus(400);
+    if (request.body.name && request.body.city) {
+        customers.push(new Customer(request.body.name, request.body.city));
+        response.send(customers[customers.length - 1].id.toString());
+        return;
+    }
+    //Respond with bad request status code
+    response.sendStatus(400);
+});
+
+app.put('/customer/edit', (request, response) => {
+    if (request.body.id) {
+        let changed = false;
+        customers.forEach(function (entry) {
+            if (entry.id == request.body.id) {
+                if (request.body.city != null) {
+                    entry.city = request.body.city;
+                    changed = true;
+                }
+                if (request.body.name != null) {
+                    entry.name = request.body.name;
+                    changed = true;
+                }
+            }
+        });
+        status_code = 304;
+        if (changed) status_code = 200;
+        response.sendStatus(status_code);
+        return;
+    }
+    response.sendStatus(400);
+});
+
+app.delete('/customer/del', (request, response) => {
+    if (request.body.id) {
+        status_code = 304;
+        for(let i = 0; i < customers.length; i++){
+            let cust = customers[i];
+            if (cust.id == request.body.id) {
+                customers.splice(i, 1);
+                status_code = 200;
+                break;
+            }
+        }
+
+        response.sendStatus(status_code);
+        return;
+    }
+    response.sendStatus(400);
 });
 
 //Start the web server
