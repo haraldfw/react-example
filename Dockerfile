@@ -1,15 +1,12 @@
-FROM node:boron
+FROM risingstack/alpine:3.3-v4.2.6-1.1.3
 
-# Create app directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
-
-# Install app dependencies
-COPY package.json /usr/src/app/
+COPY server/package.json /usr/src/node-app/server/package.json
+WORKDIR /usr/src/node-app/server
 RUN npm install
 
-# Bundle app source
-COPY . /usr/src/app
+COPY client/ /usr/src/node-app/client/
 
-EXPOSE 8080
-CMD [ "npm", "start" ]
+COPY server/server.js server.js
+
+EXPOSE 3000
+CMD ["node", "--harmony", "server.js"]
